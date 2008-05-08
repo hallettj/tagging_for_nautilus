@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+#
+# Nautilus script to add a tags to files using Tracker
+# Version 1.3
+#
+# Jesse Hallett <hallettj@gmail.com>
+# August 14, 2007
+
+tags = %x(zenity --entry --title="Add tags" --text="Enter some tags separated by commas:")
+tags = tags.split(',').collect { |t| t.strip }
+
+files = ENV["NAUTILUS_SCRIPT_SELECTED_FILE_PATHS"].split
+files.each do |file|
+  tags.each do |t|
+    %x(tracker-tag --add="#{t}" "#{file}")
+  end
+end

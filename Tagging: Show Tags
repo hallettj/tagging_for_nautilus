@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby
+#
+# Nautilus script to display tags common to all selected files
+# Version 1.3
+#
+# Jesse Hallett <hallettj@gmail.com>
+# August 14, 2007
+#
+# Known bug: due to an issue with tracker-tag, this script does not
+# display tags with spaces in them correctly. It will incorrectly
+# report a multi-word tag as a collection of separate tags. See
+# http://bugzilla.gnome.org/show_bug.cgi?id=464549
+
+tags = []
+files = ENV["NAUTILUS_SCRIPT_SELECTED_FILE_PATHS"].split
+files.each_with_index do |file,i|
+
+  if %x(tracker-tag "#{file}") =~ /^[^:]*:(.*)$/
+    file_tags = $1.strip.split(/\s+/)
+  else
+    next
+  end
+  
+  if i == 0
+    tags = file_tags
+  else
+    tags = (tags + file_tags).uniq.find_all do |t|
+      tags.include? t and file_tags.include? t
+    end
+  end
+
+end
+
+if files.length > 1
+  title = "Tags for multiple files"
+  text = "The selected files have these tags in common:\n\n"
+else
+  title = "Tags for #{ARGV.first}"
+  text = ""
+end
+
+if tags.length > 0
+  %x(zenity --info --title="#{title}" --text="#{text + tags.sort.join(", ")}")
+else
+  if files.length == 1
+    %x(zenity --info --title="#{title}" --text="This file has no tags")
+  else
+    %x(zenity --info --title="#{title}" --text="The selected files have no tags in common")
+  end
+end

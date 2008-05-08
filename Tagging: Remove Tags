@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+#
+# Nautilus script to remove tags from files using Tracker
+# Version 1.3
+#
+# Jesse Hallett <hallettj@gmail.com>
+# August 14, 2007
+#
+# Known bug: due to an issue with tracker-tag, this script does not
+# display tags with spaces in them correctly. It will incorrectly
+# report a multi-word tag as a collection of separate tags. Because of
+# this, tags containing spaces cannot be removed using this
+# script. Use tracker-search-tool or tracker-tag from the command line
+# to remove those tags. See
+# http://bugzilla.gnome.org/show_bug.cgi?id=464549
+
+files = ENV["NAUTILUS_SCRIPT_SELECTED_FILE_PATHS"].split
+tags = files.collect do |file|
+
+  if %x(tracker-tag "#{file}") =~ /^[^:]*:(.*)$/
+    file_tags = $1.strip.split(/\s+/)
+  else
+    []
+  end
+
+end.flatten
+
+formatted_tags = tags.uniq.sort.collect do |t|
+  "FALSE '#{t}'"
+end.join(" ")
+to_remove = %x(zenity --list --checklist --title="Select tags to remove" --text="Select tags to remove from the list below:" --width=300 --height=600 --column="Select" --column="Tag" #{formatted_tags} --print-column=2 --separator=",").chomp
+
+files.each do |file|
+  to_remove.split(",").each do |tag|
+    %x(tracker-tag --remove="#{tag}" "#{file}")
+  end
+end
